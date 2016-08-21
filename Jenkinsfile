@@ -15,7 +15,7 @@ parallel(longerTests: {
 })
 
 stage name: 'Staging', concurrency: 1
-node ('docker-cloud') {
+node ('slave-lower-test-nciws-p676-v') {
     deploy 'staging'
 }
 
@@ -27,14 +27,14 @@ try {
 }
 
 stage name: 'Production', concurrency: 1
-node ('docker-cloud'){
+node ('slave-lower-test-nciws-p676-v'){
     echo 'Production server looks to be alive'
     deploy 'production'
     echo "Deployed to production"
 }
 
 def mvn(args) {
-    sh "${tool 'Maven 3.x'}/bin/mvn ${args}"
+    sh "${tool 'M3'}/bin/mvn ${args}"
 }
 
 def runTests(duration) {
