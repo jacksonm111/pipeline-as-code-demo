@@ -1,7 +1,7 @@
 #!groovy
 
 stage 'Dev'
-node ('docker-cloud') {
+node ('lower-tier-test') {
     checkout scm
     mvn 'clean package'
     dir('target') {stash name: 'war', includes: 'x.war'}
