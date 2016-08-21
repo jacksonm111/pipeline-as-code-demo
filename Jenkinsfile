@@ -1,7 +1,7 @@
 #!groovy
 
 stage 'Dev'
-node ('slave-lower-test') {
+node ('slave-lower-test-nciws-p676-v') {
     checkout scm
     mvn 'clean package'
     dir('target') {stash name: 'war', includes: 'x.war'}
