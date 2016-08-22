@@ -1,5 +1,12 @@
 #!groovy
 
+input parameters ([$class: 'GitParameterDefinition', name: 'tag']) 
+try {
+    checkpoint('Before Dev')
+} catch (NoSuchMethodError _) {
+    echo 'Checkpoint feature available in CloudBees Jenkins Enterprise.'
+}
+
 stage 'Dev'
 node ('lower-test') {
     checkout scm
