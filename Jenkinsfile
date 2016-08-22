@@ -1,7 +1,7 @@
 #!groovy
 
 stage 'Dev'
-node ('lower-tier') {
+node ('lower-tier-test') {
     checkout scm
     mvn 'clean package'
     dir('target') {stash name: 'war', includes: 'x.war'}
