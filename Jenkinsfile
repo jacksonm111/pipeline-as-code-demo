@@ -15,7 +15,7 @@ parallel(longerTests: {
 })
 
 stage name: 'Staging', concurrency: 1
-node ('upper-tier') {
+node ('lower-test') {
     deploy 'staging'
 }
 
