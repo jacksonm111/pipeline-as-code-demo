@@ -15,7 +15,7 @@ parallel(longerTests: {
 })
 
 stage name: 'Staging', concurrency: 1
-node ('slave-lower-test-nciws-p676-v') {
+node ('slave-upper-p677-v') {
     deploy 'staging'
 }
 
@@ -27,7 +27,7 @@ try {
 }
 
 stage name: 'Production', concurrency: 1
-node ('slave-lower-test-nciws-p676-v'){
+node ('slave-upper-p677-v'){
     echo 'Production server looks to be alive'
     deploy 'production'
     echo "Deployed to production"
