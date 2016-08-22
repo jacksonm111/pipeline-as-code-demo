@@ -1,7 +1,7 @@
 #!groovy
 
 stage 'Dev'
-node ('slave-lower-test-nciws-p676-v') {
+node ('lower-tier') {
     checkout scm
     mvn 'clean package'
     dir('target') {stash name: 'war', includes: 'x.war'}
@@ -15,7 +15,7 @@ parallel(longerTests: {
 })
 
 stage name: 'Staging', concurrency: 1
-node ('slave-upper-p677-v') {
+node ('upper-tier') {
     deploy 'staging'
 }
 
@@ -27,7 +27,7 @@ try {
 }
 
 stage name: 'Production', concurrency: 1
-node ('slave-upper-p677-v'){
+node ('upper-tier'){
     echo 'Production server looks to be alive'
     deploy 'production'
     echo "Deployed to production"
