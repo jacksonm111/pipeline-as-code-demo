@@ -1,6 +1,6 @@
 #!groovy
 
-input parameters ([$class: 'GitParameterDefinition', name: 'tag']) 
+input parameters: ([$class: 'GitParameterDefinition', name: 'tag']) 
 try {
     checkpoint('Before Dev')
 } catch (NoSuchMethodError _) {
