@@ -73,7 +73,7 @@ checkout scm
     stage ('Staging') {
       steps {
         unstash 'war'
-        sh "scp x.war jenkinsa@ncidt-d013-v.nci.nih.gov:/home/ubuntu/prod/jboss-as-7.1.1.Final/standalone/deployments/staging.war"
+        sh "scp x.war /home/ubuntu/prod/jboss-as-7.1.1.Final/standalone/deployments/staging.war"
       }
     }
 
@@ -101,7 +101,7 @@ checkout scm
       steps {
         echo 'Production server looks to be alive'
         unstash 'war'
-        sh "scp x.war jenkinsa@ncidt-d013-v.nci.nih.gov:/home/ubuntu/prod/jboss-as-7.1.1.Final/standalone/deployments/production.war"
+        sh "scp x.war /home/ubuntu/prod/jboss-as-7.1.1.Final/standalone/deployments/production.war"
         echo "Deployed to production"
       }
     }
