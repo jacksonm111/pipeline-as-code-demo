@@ -8,16 +8,11 @@ pipeline {
     def tag="master"
     def LABEL_LOWER="label-intg"
     def LABEL_UPPER="label-prod"
-    def CREDS="aaf5671dd2b237490fe16bea20d552fefc755a0c"
     def url='https://github.com/jacksonm111-org/pipeline-as-code-demo.git'
     def TIME1=5
     def TIME2=10
   }
   agent {label 'label-intg'}
-
-// def undeploy(id) {
-  // sh "ssh jenkinsa@ncidt-d013-v.nci.nih.gov 'rm /home/ubuntu/prod/jboss-as-7.1.1.Final/standalone/deployments/${id}.war'"
-// }
 
   stages {
     /*run on master*/
@@ -39,9 +34,10 @@ pipeline {
         step([$class: 'WsCleanup'])
         
         /*checkout*/
-        checkout([$class: 'GitSCM', branches: [[name: "*/${tag}"]], doGenerateSubmoduleConfigurations: true
-        , extensions: [], gitTool: 'Default', submoduleCfg: [], userRemoteConfigs: [[credentialsId: "${CREDS}"
-        , url: "${url}"]]])
+//        checkout scm:([$class: 'GitSCM', branches: [[name: "*/${tag}"]], doGenerateSubmoduleConfigurations: true
+//        , extensions: [], gitTool: 'Default', submoduleCfg: [], userRemoteConfigs: [[credentialsId: "${CREDS}"
+//        , url: "${url}"]]])
+checkout scm
         stash('checkout')    
       }
     }
