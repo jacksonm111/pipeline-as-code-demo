@@ -90,7 +90,7 @@ checkout scm
       agent { label 'master' }
       steps {
         timeout(time: 1, unit: 'MINUTES'){
-          input message: 'Deploy to prod?'/*, submitter: 'hartmanp'*//*uncomment when authentication enabled*/
+          input message: 'Deploy to prod?'/*, submitter: 'admin'*//*uncomment when authentication enabled*/
         }
       }
     }
