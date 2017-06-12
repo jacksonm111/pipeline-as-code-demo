@@ -1,97 +1,113 @@
-//#!groovy
-/**
-  * scripted pipeline
-  */
+#!groovy
+
 //input message: '', parameters: [[$class: 'GitParameterDefinition', branchFilter: '.*', defaultValue: '*/master', name: 'tag', tagFilter: '*', type: 'PT_BRANCH_TAG', Description: '']]
 //def res = input (message: '', parameters: [[$class: 'TextParameterDefinition', id: 'res', name: 'tag', defaultValue: '*/master', Description: '']])
-def GIT_BRANCH="master"
-def LABEL_LOWER="slave-pool-1"
-def LABEL_UPPER="slave-pool-2"
-def CREDS="d0de737521789c86b571d4cdc1cdc0ec3dc88fb9"
-def URL='https://github.com/jacksonm111-org/pipeline-as-code-demo.git'
-def TIME1=5
-def TIME2=10
 
-def mvn(args) {
-    sh "${tool 'M3'}/bin/mvn ${args}"
-}
+pipeline {
+  environment {
+    def tag="master"
+    def LABEL_LOWER="label-intg"
+    def LABEL_UPPER="label-prod"
+    def CREDS="aaf5671dd2b237490fe16bea20d552fefc755a0c"
+    def url='https://github.com/jacksonm111-org/pipeline-as-code-demo.git'
+    def TIME1=5
+    def TIME2=10
+  }
+  agent {label 'label-intg'}
 
-def runTests(duration, label) {
-    node(label) {
-      sh "ls -la"
-        sh "sleep ${duration}"
+// def undeploy(id) {
+  // sh "ssh jenkinsa@ncidt-d013-v.nci.nih.gov 'rm /home/ubuntu/prod/jboss-as-7.1.1.Final/standalone/deployments/${id}.war'"
+// }
+
+  stages {
+    /*run on master*/
+    /*dump env*/
+    stage ('dump-env')
+    {
+      agent { label 'master' }
+      steps {
+        sh 'env > env.txt'
+        script {
+          s = readFile('env.txt').split("\r?\n")
+          for(i=0; i <s.length; i++) {
+//        println s[i]
+          }
         }
+
+        /*checkpoint and clean workspace*/
+        stash('Before cleanup')
+        step([$class: 'WsCleanup'])
+        
+        /*checkout*/
+        checkout([$class: 'GitSCM', branches: [[name: "*/${tag}"]], doGenerateSubmoduleConfigurations: true
+        , extensions: [], gitTool: 'Default', submoduleCfg: [], userRemoteConfigs: [[credentialsId: "${CREDS}"
+        , url: "${url}"]]])
+        stash('checkout')    
+      }
+    }
+    
+    /*run on slave*/
+    stage ('Dev') {
+      steps {
+        unstash('checkout')
+        /*build*/
+        sh "${tool 'M3'}/bin/mvn clean package"
+        /*deploy*/
+        dir('target') {stash name: 'war', includes: 'x.war'}
+      }
     }
 
-def deploy(id) {
-    unstash 'war'
-    sh "cp x.war /tmp/${id}.war"
-}
-
-def undeploy(id) {
-    sh "rm /tmp/${id}.war"
-}
-
-//start
-node {
-    sh 'env > env.txt'
-    s = readFile('env.txt').split("\r?\n")
-    for(i=0; i <s.length; i++) {
-        println s[i]
+    /*run on slave*/
+    stage ('QA') {
+      steps {
+        parallel(
+          longerTests: {
+            sh "ls -la"
+            sh "sleep ${TIME1}"
+          } 
+          , quickerTests: {
+            sh "ls -la"
+            sh "sleep ${TIME2}"
+          }
+        )
+      }
     }
-}
 
-try {
-    checkpoint('Before Dev')
-} catch (NoSuchMethodError _) {
-    echo 'Checkpoint feature available in CloudBees Jenkins Enterprise.'
-}
-
-stage 'Dev'
-node (LABEL_LOWER) {
-//    checkout([$class: 'GitSCM', branches: [[name: "ref/heads/${tag}"]], doGenerateSubmoduleConfigurations: false
-//      , extensions: [], gitTool: 'Default', submoduleCfg: [], userRemoteConfigs: [[credentialsId: CREDS
-//      , url: URL]]])    
-		checkout scm: [$class: 'GitSCM', branches: [[name: "*/${GIT_BRANCH}"]], userRemoteConfigs: [[credentialsId: 'git', url: URL]]]
-    mvn 'clean package'
-    dir('target') {stash name: 'war', includes: 'x.war'}
-}
-echo '21'
-
-stage 'QA'
-node(LABEL_LOWER) {
-  parallel(
-    longerTests: {
-      runTests(TIME1, LABEL_LOWER)
-    }, quickerTests: {
-      runTests(TIME2, LABEL_LOWER)
+    /*run on slave*/
+    stage ('Staging') {
+      steps {
+        unstash 'war'
+        sh "scp x.war jenkinsa@ncidt-d013-v.nci.nih.gov:/home/ubuntu/prod/jboss-as-7.1.1.Final/standalone/deployments/staging.war"
+      }
     }
-  )
-}
 
-stage name: 'Staging', concurrency: 1
-node (LABEL_UPPER) {
-  deploy 'staging'
-}
+    /*run on master*/
+    stage('Notify approver')
+    {
+      agent { label 'master' }
+      steps {
+        mail body: "${JOB_URL}", subject: "Request deploy to production (Build ${BUILD_ID})", to: 'hartmanph@nih.gov'
+      }
+    }
+    stage('Wait for approval')
+    {
+      agent { label 'master' }
+      steps {
+        timeout(time: 1, unit: 'MINUTES'){
+          input message: 'Deploy to prod?'/*, submitter: 'hartmanp'*//*uncomment when authentication enabled*/
+        }
+      }
+    }
 
-stage 'Approval'
-node {
-  mail bcc: '', body: "${JOB_URL}", cc: '', from: '', replyTo: '', subject: 'Request deploy to production', to: 'hartmanph@nih.gov'
-  timeout(time: 1, unit: 'HOURS'){
-    input message: "Does staging look good?", submitter: "hartmanp"
+    /*run on slave*/
+    stage ('Production') {
+      agent { label 'label-prod' }
+      steps {
+        echo 'Production server looks to be alive'
+        unstash 'war'
+        sh "scp x.war jenkinsa@ncidt-d013-v.nci.nih.gov:/home/ubuntu/prod/jboss-as-7.1.1.Final/standalone/deployments/production.war"
+        echo "Deployed to production"
+      }
+    }
   }
 }
-
-try {
-    checkpoint('Before production')
-} catch (NoSuchMethodError _) {
-    echo 'Checkpoint feature available in CloudBees Jenkins Enterprise.'
-}
-
-stage name: 'Production', concurrency: 1
-node (LABEL_UPPER){
-    echo 'Production server looks to be alive'
-    deploy 'production'
-    echo "Deployed to production"
-}
-
