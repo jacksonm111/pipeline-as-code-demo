@@ -4,10 +4,10 @@
   */
 //input message: '', parameters: [[$class: 'GitParameterDefinition', branchFilter: '.*', defaultValue: '*/master', name: 'tag', tagFilter: '*', type: 'PT_BRANCH_TAG', Description: '']]
 //def res = input (message: '', parameters: [[$class: 'TextParameterDefinition', id: 'res', name: 'tag', defaultValue: '*/master', Description: '']])
-def res=[name:"*/master"]
+def GIT_BRANCH="master"
 def LABEL_LOWER="slave-pool-1"
 def LABEL_UPPER="slave-pool-2"
-def CREDS="  6d6e8a0f-c9f9-4177-8e8a-bcbf58de8bf6"
+def CREDS="d0de737521789c86b571d4cdc1cdc0ec3dc88fb9"
 def URL='https://github.com/jacksonm111-org/pipeline-as-code-demo.git'
 def TIME1=5
 def TIME2=10
@@ -46,17 +46,13 @@ try {
 } catch (NoSuchMethodError _) {
     echo 'Checkpoint feature available in CloudBees Jenkins Enterprise.'
 }
-echo '10'
-def tag = res['name']
-echo '11'
-echo ("tag=${tag}")
-echo '13'
 
 stage 'Dev'
 node (LABEL_LOWER) {
-    checkout([$class: 'GitSCM', branches: [[name: "ref/heads/${tag}"]], doGenerateSubmoduleConfigurations: false
-      , extensions: [], gitTool: 'Default', submoduleCfg: [], userRemoteConfigs: [[credentialsId: CREDS
-      , url: URL]]])    
+//    checkout([$class: 'GitSCM', branches: [[name: "ref/heads/${tag}"]], doGenerateSubmoduleConfigurations: false
+//      , extensions: [], gitTool: 'Default', submoduleCfg: [], userRemoteConfigs: [[credentialsId: CREDS
+//      , url: URL]]])    
+		checkout scm: [$class: 'GitSCM', branches: [[name: "*/${GIT_BRANCH}"]], userRemoteConfigs: [[credentialsId: 'git', url: URL]]]
     mvn 'clean package'
     dir('target') {stash name: 'war', includes: 'x.war'}
 }
